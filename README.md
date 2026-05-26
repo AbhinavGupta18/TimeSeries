@@ -1,84 +1,128 @@
-# TimeSeries Project
+# TimeSeries — S&P 500 Quantitative Risk Pipeline
 
-## Overview
-This repository contains a quantitative risk‑management pipeline for S&P 500 data. The pipeline performs the following steps:
-1. Load historical price data.
-2. Conduct exploratory data analysis (EDA).
-3. Fit mean‑reversion models (ARMA) and volatility models (GARCH, GARCH‑t).
-4. Perform VaR back‑testing.
-5. Save all generated plots and JSON summaries under the `plots/` directory.
+A modular Python pipeline for fitting time-series models to S&P 500 daily returns and back-testing Value-at-Risk (VaR) forecasts.
 
-## Prerequisites
-- **Operating System**: Windows (tested with Git‑Bash / MINGW64)
-- **Python**: 3.11 or newer
-- **Package manager**: `pip`
+---
+
+## Installation
 
 ```bash
-# Create a virtual environment (optional but recommended)
-python -m venv venv
-# Activate the environment
-source venv/Scripts/activate   # PowerShell: .\venv\Scripts\Activate.ps1
-# Install required packages
 pip install -r requirements.txt
 ```
 
-> The `requirements.txt` file is generated from the current environment and includes `pandas`, `numpy`, `matplotlib`, `scipy`, `statsmodels`, `arch`, and other dependencies required by the source modules.
+---
 
-## Folder Structure
-```mermaid
-flowchart TB
-    root[Project Root]
-    subgraph root
-        src[src]
-        plots[plots]
-        data[data]
-        run[run_pipeline.py]
-        README[README.md]
-        .gitignore[.gitignore]
-        requirements[requirements.txt]
-    end
-    src --> data_loader[data_loader.py]
-    src --> eda[eda.py]
-    src --> mean_models[mean_models.py]
-    src --> variance_models[variance_models.py]
-    src --> var_backtest[var_backtest.py]
-    src --> utils[utils.py]
-    src --> __init__[__init__.py]
-    plots --> eda_plots[eda/]
-    plots --> grid_search[grid_search/]
-    plots --> models[models/]
-    plots --> var[var/]
-    data --> sp500_data[data/sp500_data.csv]
+## Repository Structure
+
+```
+TimeSeries/
+├── run_pipeline.py          # Entry point — orchestrates all steps
+├── requirements.txt
+├── README.md
+├── .gitignore
+│
+├── src/
+│   ├── __init__.py
+│   ├── data_loader.py       # Download and cache S&P 500 prices
+│   ├── eda.py               # Exploratory data analysis and diagnostics
+│   ├── mean_models.py       # ARMA fitting and grid search
+│   ├── variance_models.py   # GARCH and GARCH-t fitting and grid search
+│   ├── var_backtest.py      # VaR computation and back-testing
+│   └── utils.py             # Plotting helpers, warning filters
+│
+├── data/
+│   └── sp500_data.csv       # Cached price series (auto-generated)
+│
+└── plots/
+    ├── eda/                 # Descriptive statistics, Q-Q, ACF/PACF
+    ├── grid_search/         # AIC/BIC tables for ARMA and GARCH grids
+    ├── models/              # Fitted volatility and return plots
+    └── var/                 # VaR back-test results and exception plots
 ```
 
-- `src/` – Python modules implementing data loading, analysis, and modeling.
-- `plots/` – Subdirectories containing PNG/JSON artefacts produced by the pipeline.
-- `data/` – Cached raw data (e.g., `sp500_data.csv`).
-- `run_pipeline.py` – Entry point that orchestrates the entire workflow.
-- `requirements.txt` – Pin‑pointed package versions.
-- `.gitignore` – Excludes caches, virtual‑environment folders, and large artefacts.
+---
 
 ## Running the Pipeline
-Execute the following command from the project root:
+
 ```bash
 python run_pipeline.py
 ```
-The script will:
-- Download the S&P 500 dataset if it is not present in `data/`.
-- Generate EDA plots in `plots/eda/`.
-- Perform model selection and store grid‑search results in `plots/grid_search/`.
-- Produce final model visualisations in `plots/models/`.
-- Run VaR back‑testing and save the results under `plots/var/`.
 
-All output files are written relative to the repository root; no additional command‑line arguments are required.
+The script executes the following steps in order:
+
+1. Load (or download and cache) S&P 500 closing prices.
+2. Compute log-returns and run exploratory analysis.
+3. Fit ARMA mean models via grid search.
+4. Fit GARCH and GARCH-t variance models via grid search.
+5. Back-test VaR at the 1% and 5% confidence levels.
+6. Save all figures and JSON summaries under `plots/`.
+
+---
+
+## Mathematical Background
+
+### Log-Returns
+
+Given a price series $\{P_t\}$, the continuously compounded return is
+
+$$r_t = \ln P_t - \ln P_{t-1}$$
+
+### ARMA(p, q) — Mean Model
+
+The conditional mean follows an AutoRegressive Moving-Average process:
+
+$$r_t = \mu + \sum_{i=1}^{p} \phi_i\, r_{t-i} + \varepsilon_t + \sum_{j=1}^{q} \theta_j\, \varepsilon_{t-j}, \qquad \varepsilon_t \sim \mathcal{N}(0,\, \sigma_t^2)$$
+
+Model order $(p, q)$ is selected by minimising the Akaike Information Criterion:
+
+$$\mathrm{AIC} = 2k - 2\ln\hat{L}$$
+
+where $k$ is the number of estimated parameters and $\hat{L}$ is the maximised likelihood.
+
+### GARCH(p, q) — Variance Model
+
+The conditional variance $\sigma_t^2$ follows a Generalised AutoRegressive Conditional Heteroskedasticity model:
+
+$$\sigma_t^2 = \omega + \sum_{i=1}^{p} \alpha_i\, \varepsilon_{t-i}^2 + \sum_{j=1}^{q} \beta_j\, \sigma_{t-j}^2$$
+
+with the stationarity constraint $\sum_{i}\alpha_i + \sum_{j}\beta_j < 1$.
+
+### GARCH-t — Heavy-Tailed Innovation
+
+Replace the Gaussian innovation with a standardised Student-$t$ distribution:
+
+$$\varepsilon_t = \sigma_t\, z_t, \qquad z_t \sim t_\nu(0,\,1)$$
+
+The degree-of-freedom parameter $\nu > 2$ is estimated jointly with $(\omega, \alpha, \beta)$ by maximum likelihood. Heavier tails ($\nu$ small) better capture the leptokurtosis observed in financial returns.
+
+### Value-at-Risk (VaR)
+
+The one-step-ahead VaR at confidence level $\alpha$ is the left quantile of the conditional return distribution:
+
+$$\mathrm{VaR}_{t+1}(\alpha) = \mu_{t+1} + \sigma_{t+1}\, F^{-1}(\alpha)$$
+
+where $F^{-1}(\alpha)$ is the quantile function of the assumed innovation distribution ($\Phi^{-1}$ for Gaussian, $t_\nu^{-1}$ for Student-$t$).
+
+### Kupiec Back-Test
+
+The proportion-of-failures (POF) test checks whether the observed exception rate matches $\alpha$. Let $T$ be the number of observations and $n$ the number of exceptions ($r_t < -\mathrm{VaR}_t$). The likelihood-ratio statistic is
+
+$$\mathrm{LR}_\text{POF} = -2\ln\!\left[\frac{\alpha^n(1-\alpha)^{T-n}}{(\hat{p})^n(1-\hat{p})^{T-n}}\right] \xrightarrow{d} \chi^2_1$$
+
+where $\hat{p} = n/T$. Rejection of the null ($\mathrm{LR}_\text{POF} > \chi^2_{1,\,1-\alpha_\text{test}}$) indicates a mis-specified model.
+
+---
 
 ## Version Control
-The repository is managed with Git. After making any modifications, the typical workflow is:
+
 ```bash
 git add -A
-git commit -m "Your descriptive message"
+git commit -m "Your message"
 git push
 ```
 
+---
+
 ## License
+
 This project is provided under the MIT License.
