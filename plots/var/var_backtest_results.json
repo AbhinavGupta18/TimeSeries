@@ -1,0 +1,38 @@
+{
+  "GARCH": {
+    "95%": {
+      "violations": 154,
+      "violation_rate_%": 6.1232604373757455,
+      "expected_%": 5.0,
+      "lr_stat": 6.253638868619873,
+      "p_value": 0.012393844282291686,
+      "pass": false
+    },
+    "99%": {
+      "violations": 56,
+      "violation_rate_%": 2.2266401590457257,
+      "expected_%": 1.0,
+      "lr_stat": 28.339134394545113,
+      "p_value": 1.0181668650747384e-07,
+      "pass": false
+    }
+  },
+  "GARCH-t": {
+    "95%": {
+      "violations": 169,
+      "violation_rate_%": 6.719681908548708,
+      "expected_%": 5.0,
+      "lr_stat": 14.201457295792352,
+      "p_value": 0.000164243264254435,
+      "pass": false
+    },
+    "99%": {
+      "violations": 42,
+      "violation_rate_%": 1.6699801192842942,
+      "expected_%": 1.0,
+      "lr_stat": 9.490474705932058,
+      "p_value": 0.0020654137464633424,
+      "pass": false
+    }
+  }
+}

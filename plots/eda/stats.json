@@ -1,0 +1,19 @@
+{
+  "descriptive": {
+    "Count": 2515,
+    "Mean": 0.041749587425788236,
+    "Std Dev": 1.1269723841500943,
+    "Skewness": -0.8104367766046252,
+    "Kurtosis": 15.755128216386176,
+    "Min": -12.765219747281742,
+    "Max": 8.968323251796326,
+    "Jarque-Bera Stat": 26175.672420787374,
+    "Jarque-Bera p-value": 0.0
+  },
+  "stationarity": {
+    "ADF Statistic": -15.725859179551707,
+    "ADF p-value": 1.307078974682975e-28,
+    "KPSS Statistic": 0.049496209806408085,
+    "KPSS p-value": 0.1
+  }
+}
